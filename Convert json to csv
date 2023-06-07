@@ -1,0 +1,100 @@
+function createSheetFromJSON() {
+
+var prefix = "Payments-"; // Prefix for the product area
+
+
+    deleteSheets() ;
+    
+
+  // Get the JSON content from the input cell
+
+  var inputSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+ 
+  var jsonContent = inputSheet.getRange("A1").getValue();
+
+  // Parse the JSON content
+  var data = JSON.parse(jsonContent);
+
+  // Create a new sheet
+  var newSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet();
+  renameSheetWithTimestamp(); // rename output sheet if present already
+  newSheet.setName("Output Sheet");
+
+  // Set headers for the columns
+  var headers = ["Product Area", "Key", "English Content"];
+  newSheet.getRange("A1:C1").setValues([headers]);
+
+  // Process the JSON data and populate the sheet
+  processJSON(data, prefix, newSheet);
+
+  Logger.log("JSON processing is done");
+  removeHyphenFromColumnA();
+}
+
+function processJSON(data, prefix, sheet) {
+  for (var key in data) {
+    var value = data[key];
+
+    // Check if value is an object
+    if (typeof value === "object" && value !== null) {
+      // Process nested object recursively with updated prefix
+      processJSON(value, prefix + key + "-", sheet);
+    } else {
+      // Add key-value pair to "Key" and "English Content" columns
+      sheet.appendRow([prefix, key, value]);
+    }
+  }
+}
+
+
+function removeHyphenFromColumnA() {
+  var sheetName = "Output Sheet"; // Specify the name of the sheet
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  
+  var lastRow = sheet.getLastRow();
+  var range = sheet.getRange("A1:A" + lastRow);
+  var values = range.getValues();
+  
+  for (var i = 0; i < values.length; i++) {
+    var value = values[i][0];
+    if (typeof value === "string" && value.endsWith("-")) {
+      values[i][0] = value.slice(0, -1); // Remove the hyphen from the value
+    }
+  }
+  
+  range.setValues(values);
+}
+
+function renameSheetWithTimestamp() {
+  var sheetName = "Output Sheet"; // Specify the name of the sheet to be renamed
+  var timestamp = Utilities.formatDate(new Date(), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "yyyy-MM-dd HH:mm:ss");
+  var newSheetName = "Output Sheet - " + timestamp;
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (sheet) {
+    sheet.setName(newSheetName);
+    Logger.log("Sheet '" + sheetName + "' has been renamed to '" + newSheetName + "'.");
+  } else {
+    Logger.log("Sheet '" + sheetName + "' does not exist.");
+  }
+}
+
+
+function deleteSheets() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = spreadsheet.getSheets();
+  
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var sheetName = sheet.getName();
+    
+    if (sheetName !== "Sheet1") {
+      spreadsheet.deleteSheet(sheet);
+      console.log("Deleted sheet: " + sheetName);
+    }
+  }
+}
+
+
