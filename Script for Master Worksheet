@@ -1,0 +1,171 @@
+function masterFunction() {
+  concatenateColumns("newKeys");
+  concatenateColumns("master");
+  markDuplicates();
+  updateMasterSheet();
+  deleteDuplicates();
+}
+
+
+
+
+
+
+function markDuplicates() {
+  var masterSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("master"); // Sheet4
+  var newKeysSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("newKeys"); // sheet3
+  
+  var masterSheetData = masterSheet.getDataRange().getValues();
+  var newKeysSheetData = newKeysSheet.getDataRange().getValues();
+  
+  var duplicates = {}; // Store duplicate values from masterSheet
+  
+  // Find duplicate values in Column E of masterSheet
+  for (var i = 1; i < masterSheetData.length; i++) {
+    var valueMasterSheet = masterSheetData[i][4]; // Column E in masterSheet
+    
+    if (valueMasterSheet !== "") {
+      if (duplicates[valueMasterSheet]) {
+        duplicates[valueMasterSheet].push(i + 1); // Append row number
+      } else {
+        duplicates[valueMasterSheet] = [i + 1];
+      }
+    }
+  }
+  
+  // Check for duplicates in Column E of newKeysSheet and mark them
+  for (var j = 1; j < newKeysSheetData.length; j++) {
+    var valueNewKeysSheet = newKeysSheetData[j][4]; // Column E in newKeysSheet
+    
+    if (duplicates[valueNewKeysSheet]) {
+      var rowNumbers = duplicates[valueNewKeysSheet].join(", ");
+      
+      if (((rowNumbers.match(/,/g) || []).length === 0) && rowNumbers.includes("Duplicating rows")) {
+        Logger.log("Zero commas found and contains 'Duplicating rows'.");
+
+        var matchingRowNumber = duplicates[valueNewKeysSheet][0];
+        masterSheet.getRange(matchingRowNumber, 3).setValue(newKeysSheetData[j][2]); // Copy Column C value
+        masterSheet.getRange(matchingRowNumber, 7).clearContent(); // Clear Column G
+      } else if ((rowNumbers.match(/,/g) || []).length === 1) {
+        Logger.log("Exactly one comma found.");
+      } else if ((rowNumbers.match(/,/g) || []).length > 1) {
+        Logger.log("More than one comma found.");
+      } else {
+        Logger.log("No comma found.");
+      }
+      
+      newKeysSheetData[j][5] = "Duplicating rows - " + rowNumbers;
+    }
+  }
+  
+  // Update newKeysSheet with changes
+  newKeysSheet.getDataRange().setValues(newKeysSheetData);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function concatenateColumns(sheetName) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var data = sheet.getDataRange().getValues();
+  
+  // Process the data
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var valueA = row[0];
+    var valueB = row[1];
+    if (row[4] === "") {
+      // Concatenate column A and column B with "::"
+      var concatenatedValue = valueA + "::" + valueB;
+      
+      // Update the value in column A
+      row[4] = concatenatedValue;
+    }
+  }
+  
+  // Update sheet with changes
+  sheet.getDataRange().setValues(data);
+}
+
+
+
+
+
+
+function deleteDuplicates() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("newKeys");
+  var data = sheet.getDataRange().getValues();
+  
+  for (var i = data.length - 1; i >= 0; i--) {
+    var row = data[i];
+    var text = row[5]; // Column F
+    
+    if (text.includes("Duplicating rows") && !text.includes(",")) {
+      Logger.log("Deleteing .. " + row[0] + " : " + row[1] + " : " + row[2] + " : " + row[3] + " : " + row[4] + " : " + row[5]);
+       sheet.deleteRow(i + 1);
+      //row[5] = "This row has to be deleted";
+    }
+  }
+
+  Logger.log("Deletion .. if any.. is done");
+}
+
+
+
+
+
+function updateMasterSheet() {
+  var newKeysSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("newKeys");
+  var masterSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("master");
+  
+  var newKeysData = newKeysSheet.getDataRange().getValues();
+  var masterData = masterSheet.getDataRange().getValues();
+  
+  for (var i = 1; i < newKeysData.length; i++) {
+    var valueF = newKeysData[i][5]; // Column F in newKeysSheet
+    
+    if (valueF.includes("Duplicating rows") && !valueF.includes(",")) {
+      var valueE = newKeysData[i][4]; // Column E in newKeysSheet
+      
+      for (var j = 1; j < masterData.length; j++) {
+        var masterValueE = masterData[j][4]; // Column E in masterSheet
+        
+        if (valueE === masterValueE) {
+          var valueC = newKeysData[i][2]; // Column C in newKeysSheet
+          
+          masterSheet.getRange(j + 1, 3).setValue(valueC); // Set value in Column C of masterSheet
+          masterSheet.getRange(j + 1, 7).clear(); // Clear content in Column G of masterSheet
+          
+          break; // Exit the inner loop since matching row found
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
