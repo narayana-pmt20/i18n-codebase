@@ -1,0 +1,795 @@
+function masterFunction() {
+
+  var startRow = 8413; 
+  copyColumnMtoN(startRow); 
+
+  clearColumnsDF(startRow);
+  runTranslation(startRow);
+  // //  runLangCheck(startRow);
+  scanForColon_Slash_doubleQuotes(startRow, -1);
+  verifyCurlyBraces(startRow, -1);
+  verifyAngleBrackets(startRow, -1);
+  removeDotFromEnd(startRow, -1);
+  setVerifiedFlag(startRow, -1);
+  
+}
+
+
+
+function setVerifiedFlag(startRow, endingRow) {
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnEIndex = 5; // Column E index (1-based)
+  var columnFIndex = 6; // Column F index (1-based)
+
+  var charactersToCheck = ["»"]; // Characters to check for
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (endingRow === -1) {
+    var lastRow = sheet.getLastRow();
+  } else {
+    var lastRow = endingRow;
+  }
+  // var rangeE = sheet.getRange(startRow, columnEIndex, lastRow - startRow + 1);
+  // rangeE.clearContent();
+
+
+  var range = sheet.getRange(startRow, columnDIndex, lastRow - startRow + 1, columnFIndex);
+  var values = range.getValues();
+/* 
+  Logger.log("Running other special char checks ... ");
+
+  for (var i = 0; i < values.length; i++) {
+    var row = i + startRow;
+    var valueD = String(values[i][0]); // Convert value to a string
+    var valueE = String(values[i][1]);
+    var valueF = String(values[i][2]);
+    var commentAdded = false; // Flag to track comment addition
+
+    if (valueF !== "Verified") {
+      for (var j = 0; j < charactersToCheck.length; j++) {
+        var characterToCheck = charactersToCheck[j];
+
+        // Check for character
+        if (valueD.includes(characterToCheck) && !commentAdded) {
+          var comment = "Verify for " + characterToCheck;
+          if (valueE !== "") {
+            valueE += "\n" + comment;
+          } else {
+            valueE = comment;
+          }
+          commentAdded = true; // Set flag to true
+        }
+      }
+    }
+
+    // Update the value in column E
+    sheet.getRange(row, columnEIndex).setValue(valueE);
+  }
+
+  */
+
+Logger.log("Setting Verified flag to column F");
+// Set "Verified" in column F for all processed rows
+var rangeF = sheet.getRange(startRow, columnFIndex, lastRow - startRow + 1);
+var valuesF = rangeF.getValues();
+for (var i = 0; i < valuesF.length; i++) {
+  valuesF[i][0] = "Verified";
+}
+rangeF.setValues(valuesF);
+
+
+}
+
+
+
+function verifyCurlyBraces(startRow, endingRow) {
+  Logger.log("Inside verifyCurlyBraces ... ");
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnCIndex = 3; // Column C index (1-based)
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnEIndex = 5; // Column E index (1-based)
+  var columnFIndex = 6; // Column F index (1-based)
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (endingRow === -1) {
+    var lastRow = sheet.getLastRow();
+  } else {
+    var lastRow = endingRow;
+  }
+
+  var range = sheet.getRange(startRow, columnCIndex, lastRow - startRow + 1, columnFIndex);
+  var values = range.getValues();
+
+  for (var i = 0; i < values.length; i++) {
+    var row = i + startRow;
+    var valueC = String(values[i][0]); // Convert value in column C to a string
+    var valueD = String(values[i][1]); // Convert value in column D to a string
+    var valueE = String(values[i][2]);
+    var valueF = String(values[i][3]);
+
+        if (!valueF) { // run the checks only the row is not verified already
+          // Find phrases within curly braces in column C
+          var regex = /{(.*?)}/g;
+          var matchesC = valueC.match(regex);
+          var phrasesC = [];
+          if (matchesC !== null) {
+            phrasesC = matchesC.map(function(match) {
+              return match.slice(1, -1).trim();
+            });
+          }
+
+          // Find phrases within curly braces in column D
+          var matchesD = valueD.match(regex);
+          var phrasesD = [];
+          if (matchesD !== null) {
+            phrasesD = matchesD.map(function(match) {
+              return match.slice(1, -1).trim();
+            });
+          }
+
+          var missingPhrases = [];
+          for (var j = 0; j < phrasesC.length; j++) {
+            if (!phrasesD.includes(phrasesC[j])) {
+              missingPhrases.push(phrasesC[j]);
+            }
+          }
+
+          if (missingPhrases.length > 0) {
+            valueE = "Verify curly braces for " + missingPhrases.join(", ");
+          }
+
+          // Update the value in column E
+          sheet.getRange(row, columnEIndex).setValue(valueE);
+        }
+  }
+}
+
+
+
+
+function verifyAngleBrackets(startRow, endingRow) {
+  Logger.log("Inside verifyAngleBrackets ... ");
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnCIndex = 3; // Column C index (1-based)
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnEIndex = 5; // Column E index (1-based)
+  var columnFIndex = 6; // Column E index (1-based)
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (endingRow === -1) {
+    var lastRow = sheet.getLastRow();
+  } else {
+    var lastRow = endingRow;
+  }
+
+  var range = sheet.getRange(startRow, columnCIndex, lastRow - startRow + 1, columnFIndex);
+  var values = range.getValues();
+
+  for (var i = 0; i < values.length; i++) {
+    var row = i + startRow;
+    var valueC = String(values[i][0]); // Convert value in column C to a string
+    var valueD = String(values[i][1]); // Convert value in column D to a string
+    var valueE = String(values[i][2]);
+    var valueF = String(values[i][3]);
+
+      if (!valueF) { // run checks only if the row is not verified
+          // Find phrases within angle brackets in column C
+          var regex = /<(.*?)>/g;
+          var matchesC = valueC.match(regex);
+          var phrasesC = [];
+          if (matchesC !== null) {
+            phrasesC = matchesC.map(function(match) {
+              return match.slice(1, -1);
+            });
+          }
+
+          // Find phrases within angle brackets in column D
+          var matchesD = valueD.match(regex);
+          var phrasesD = [];
+          if (matchesD !== null) {
+            phrasesD = matchesD.map(function(match) {
+              return match.slice(1, -1);
+            });
+          }
+
+          var missingPhrases = [];
+          for (var j = 0; j < phrasesC.length; j++) {
+            if (!phrasesD.includes(phrasesC[j])) {
+              missingPhrases.push(phrasesC[j]);
+            }
+          }
+
+          if (missingPhrases.length > 0) {
+            valueE = "Verify angle brackets - " + missingPhrases.join(", ");
+          }
+
+          // Update the value in column E
+          sheet.getRange(row, columnEIndex).setValue(valueE);
+      }
+  }
+}
+
+
+
+function removeDotFromEnd(startRow, endingRow) {
+    Logger.log("Inside removeDotFromEnd ... ");
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnFIndex = 6; // Column F index (1-based)
+
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (endingRow === -1) {
+    var lastRow = sheet.getLastRow();
+  } else {
+    var lastRow = endingRow;
+  }
+  var range = sheet.getRange(startRow, columnDIndex, lastRow - startRow + 1, columnFIndex);
+  var values = range.getValues();
+
+  for (var i = 0; i < values.length; i++) {
+    var row = i + startRow;
+    var valueD = String(values[i][0]); // Convert value to a string
+    var valueF = String(values[i][2]); // Convert value to a string
+
+    if (!valueF) { // run checks only if the row is not verified already
+          // Remove the dot from the end of the text (if applicable)
+          if (valueD.endsWith('.') && !valueD.endsWith('..')) {
+            valueD = valueD.slice(0, -1);
+          }
+
+          // Update the value in column D
+          sheet.getRange(row, columnDIndex).setValue(valueD);
+    }
+
+    //remove double quotes from beginning and end of the translated string
+      if (valueD.startsWith('"') && valueD.endsWith('"')) {
+        valueD = valueD.slice(1, -1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+
+      } else if (valueD.startsWith('"')) {
+        valueD = valueD.substring(1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      } else if (valueD.endsWith('"')) {
+        valueD = valueD.substring(0, valueD.length - 1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      }
+
+
+
+    //remove single quotes from beginning and end of the translated string
+      if (valueD.startsWith("'") && valueD.endsWith("'")) {
+        valueD = valueD.slice(1, -1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+
+      } else if (valueD.startsWith("'")) {
+        valueD = valueD.substring(1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      } else if (valueD.endsWith("'")) {
+        valueD = valueD.substring(0, valueD.length - 1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      }
+
+  }
+
+
+
+
+}
+
+// lang check
+
+
+function translateText3_5(text) {
+
+  Logger.log("Translating - " + text);
+  
+  const apiKey = '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';
+
+  const apiUrl = 'https://api.openai.com/v1/chat/completions';
+  const headers = {
+    'OpenAI-Organization': 'org-A59sQyPvHQBqcqInP3zOTqDy',
+    'Authorization': 'Bearer ' + apiKey,
+    'Content-Type': 'application/json'
+  };
+
+
+  const data = {
+    "messages": [{"role": "system", "content": text}],
+    'model': 'gpt-3.5-turbo',
+  };
+  const options = {
+    'method': 'post',
+    'headers': headers,
+    'payload': JSON.stringify(data)
+  };
+
+  const response = UrlFetchApp.fetch(apiUrl, options);
+  const jsonResponse = JSON.parse(response.getContentText());
+  return jsonResponse.choices[0].message.content.trim();
+}
+
+
+
+
+
+function runLangCheck(startRow) {
+  Logger.log("Running lang check");
+  
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnEIndex = 5; // Column E index (1-based)
+  var columnFIndex = 6; // Column F index (1-based)
+  var columnGIndex = 7; // Column G index (1-based)
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  var lastRow = sheet.getLastRow();
+
+    while(true) {
+      try {
+          for (var row = startRow; row <= lastRow; row += 10) {
+            var valueD = String(sheet.getRange(row, columnDIndex).getValue());
+            var valueG = String(sheet.getRange(row, columnGIndex).getValue());
+
+            if (valueG === "") {
+              var valueG1 = String(sheet.getRange("G1").getValue());
+
+            var concatenatedValue = "Is this really " + valueG1 + "? ... '" + valueD + "'";
+            Logger.log(concatenatedValue);
+            
+              var returnedValue = translateText3_5(concatenatedValue);
+              Logger.log(returnedValue);
+              if (returnedValue.includes("Yes,")) {
+                sheet.getRange(row, columnGIndex).setValue("Lang Check Ran and it is " + valueG1);
+              } else {
+                var valueE = String(sheet.getRange(row, columnEIndex).getValue());
+                var updatedValueE = valueE !== "" ? valueE + "\n" + returnedValue : returnedValue;
+
+                // sheet.getRange(row, columnEIndex).setValue(updatedValueE);
+                sheet.getRange(row, columnGIndex).setValue(updatedValueE);
+              }
+            }
+          }
+          break;
+        } catch (e) {
+          console.error(e);
+        }
+
+    }
+}
+
+
+function scanForColon_Slash_doubleQuotes(startRow, endingRow) {
+
+  Logger.log("scanning for special characters");
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnCIndex = 3; // Column C index (1-based)
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnEIndex = 5; // Column E index (1-based)
+  var columnFIndex = 6; // Column F index (1-based)
+  
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (endingRow === -1) {
+    var lastRow = sheet.getLastRow();
+  } else {
+    var lastRow = endingRow;
+  }
+
+  var range = sheet.getRange(startRow, columnCIndex, lastRow - startRow + 1, columnFIndex);
+  var values = range.getValues();
+
+  for (var i = 0; i < values.length; i++) {
+    var row = i + startRow;
+    var valueC = String(values[i][0]); // Convert value in column C to a string
+    var valueD = String(values[i][1]); // Convert value in column D to a string
+    var valueE = String(values[i][2]);
+    var valueF = String(values[i][3]);
+
+  if (valueF === "Verified") {
+    continue;
+  }
+
+    //remove quotes from beginning and end of the translated string
+      if (valueD.startsWith('"') && valueD.endsWith('"')) {
+        valueD = valueD.slice(1, -1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+
+      } else if (valueD.startsWith('"')) {
+        valueD = valueD.substring(1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      } else if (valueD.endsWith('"')) {
+        valueD = valueD.substring(0, valueD.length - 1);
+        values[i][1] = valueD;
+        sheet.getRange(row, columnDIndex).setValue(valueD);
+        
+      }
+
+
+
+  // checking for KB, MB, GB .. if present in valueC, but missing in the translation, it should be captured, as there are no translations for KB, MB, GB.. in general
+      if (valueC.indexOf("KB") !== -1 && valueD.indexOf("KB") == -1 && valueF !== "Verified") {
+      valueE += "\nVerify for KB ";
+    }
+
+
+    if (valueC.indexOf("GMB") === -1 && valueC.indexOf("MB") !== -1 && valueD.indexOf("MB") === -1 && valueF !== "Verified") {
+      valueE += "\nVerify for MB ";
+    }
+
+    if (valueC.indexOf("GB") !== -1 && valueD.indexOf("GB") === -1 && valueF !== "Verified") {
+      valueE += "\nVerify for GB ";
+    }
+// not in Engish, but on the translation
+    if (valueC.indexOf(":") === -1 && valueD.indexOf(":") !== -1 && valueF !== "Verified") {
+      valueE += "\nVerify for : ";
+    }
+
+    if ((valueC.indexOf("(") === -1 && valueD.indexOf("(") !== -1 && valueF !== "Verified") || 
+        (valueC.indexOf(")") === -1 && valueD.indexOf(")") !== -1 && valueF !== "Verified")) {
+      valueE += "\nVerify for ( or )";
+    } else if (valueC.indexOf("(") !== -1 && valueD.indexOf("(") !== -1 && valueF !== "Verified") {
+        var bracketCountText = checkBracketCount(valueC, valueD);
+        if(bracketCountText) {
+          valueE += "\n" + checkBracketCount(valueC, valueD);
+        }
+    }
+
+    if (valueC.indexOf("/") === -1 && valueD.indexOf("/") !== -1 && valueF !== "Verified") {
+      valueE += "\nVerify for / "
+    }
+
+    if (!(valueC.includes('"') || valueC.includes('“')) && valueD.includes('"') && valueE !== "Verified") {
+         if (valueD.endsWith('"')) {
+            valueD = valueD.slice(0, -1);
+             sheet.getRange(row, columnDIndex).setValue(valueD);
+          }
+
+          if (valueD.startsWith('"')) {
+            valueD = valueD.substring(1);
+            sheet.getRange(row, columnDIndex).setValue(valueD);
+          }
+
+          if (valueD.indexOf('"') !== -1) {
+            valueE += "\nVerify for \" ";
+          }
+
+      
+    }
+
+    if (valueC.indexOf("=") === -1 && valueD.indexOf("=") !== -1 && valueF !== "Verified") {
+      valueE += "\nVerify for = ";
+    }
+
+
+    if (valueC.indexOf("»") === -1 && valueD.indexOf("»") !== -1 && valueF !== "Verified") {
+      valueE += "\nVerify for »";
+    }
+
+
+
+   if (valueC.indexOf("'") === -1 && valueD.indexOf("'") !== -1 && valueF !== "Verified") {
+
+          if (valueD.endsWith("'")) {
+            valueD = valueD.slice(0, -1);
+             sheet.getRange(row, columnDIndex).setValue(valueD);
+
+          }
+
+          if (valueD.startsWith("'")) {
+            valueD = valueD.substring(1);
+            sheet.getRange(row, columnDIndex).setValue(valueD);
+          }
+
+          if (valueD.indexOf("'") !== -1) {
+            valueE += "\nVerify for '";
+          }
+    }
+
+   if (valueC.indexOf("→") === -1 && valueD.indexOf("→") !== -1 && valueF !== "Verified") {
+      valueE += "\nVerify for →";
+    }
+    
+  
+
+  // In english, but not in translation... 
+   if (valueC.indexOf("[") !== -1 && valueD.indexOf("[") === -1 && valueF !== "Verified") {
+      valueE += "\nVerify for [";
+    }
+
+// Check if the name of the language is present in the translation
+  if (valueF !== "Verified") {
+      if (valueD.indexOf("utch ") !== -1) {
+                valueE += "\nVerify for Lang Name-utch";
+      }
+      
+      if (valueD.indexOf("Spanish") !== -1 || valueD.indexOf("spanish") !== -1) {
+                valueE += "\nVerify for Lang Name-Spanish";
+      }
+
+      if (valueD.indexOf("German") !== -1 || valueD.indexOf("german") !== -1) {
+                valueE += "\nVerify for Lang Name-German";
+      }
+      
+      if (valueD.indexOf("French") !== -1 || valueD.indexOf("french") !== -1) {
+                valueE += "\nVerify for Lang Name-French";
+      }
+      if (valueD.indexOf("Portuguese") !== -1 || valueD.indexOf("portuguese]") !== -1) {
+                valueE += "\nVerify for Lang Name-Portuguese";
+      }
+      if (valueD.indexOf("Italian") !== -1 || valueD.indexOf("italian") !== -1) {
+                valueE += "\nVerify for Lang Name-Italian";
+      }
+      if (valueD.indexOf("Swedish") !== -1 || valueD.indexOf("swedish") !== -1) {
+                valueE += "\nVerify for Lang Name-Swedish";
+      }
+     if (valueD.indexOf("Danish") !== -1) {
+                valueE += "\nVerify for Lang Name-Danish";
+      }
+      if (valueD.indexOf("Finnish") !== -1 || valueD.indexOf("finnnish") !== -1) {
+                valueE += "\nVerify for Lang Name-Finnish";
+      }
+      if (valueD.indexOf("Norwegian") !== -1 || valueD.indexOf("norwegian") !== -1) {
+                valueE += "\nVerify for Lang Name-Norwegian";
+      }
+      if (valueD.indexOf("Croatian") !== -1 || valueD.indexOf("croatian") !== -1) {
+                valueE += "\nVerify for Lang Name-Croatian";
+      }
+      if (valueD.indexOf("Hungarian") !== -1 || valueD.indexOf("hungarian") !== -1) {
+                valueE += "\nVerify for Lang Name-Hungarian";
+      }
+      if (valueD.indexOf("Japanese") !== -1 || valueD.indexOf("japanese") !== -1) {
+                valueE += "\nVerify for Lang Name-Japanese";
+      }
+      if (valueD.indexOf("Hindi") !== -1 || valueD.indexOf("hindi") !== -1) {
+                valueE += "\nVerify for Lang Name-Hindi";
+      }
+      if (valueD.indexOf("Russian") !== -1 || valueD.indexOf("russian") !== -1) {
+                valueE += "\nVerify for Lang Name-Russian";
+      }
+      if (valueD.indexOf("Turkish") !== -1 || valueD.indexOf("turkish") !== -1) {
+                valueE += "\nVerify for Lang Name-Turkish";
+      }
+      if (valueD.indexOf("Chinese") !== -1 || valueD.indexOf("chinese") !== -1) {
+                valueE += "\nVerify for Lang Name-Chinese";
+      }
+      if (valueD.indexOf("Indonasia") !== -1 || valueD.indexOf("indonasia") !== -1) {
+                valueE += "\nVerify for Lang Name-Indonesia";
+      }
+      if (valueD.indexOf("Greek") !== -1 || valueD.indexOf("greek") !== -1) {
+                valueE += "\nVerify for Lang Name-reek";
+      }
+      if (valueD.indexOf("Czeck") !== -1 || valueD.indexOf("czeck") !== -1) {
+                valueE += "\nVerify for Lang Name-Czeck";
+      }
+      if (valueD.indexOf("Korean") !== -1 || valueD.indexOf("korean") !== -1) {
+                valueE += "\nVerify for Lang Name-Korean";
+      }
+
+      if (valueD.indexOf("context") !== -1 && valueC.indexOf("context") === -1) {
+                valueE += "\nVerify for word-Context";
+      }
+
+      if (valueD.indexOf("an AI language model") !== -1) {
+                valueE += "\nVerify for AI Lang model";
+      }
+
+      var wordsInC = valueC.trim().split(" ").length;
+      var wordsInD = valueD.trim().split(" ").length;
+
+      if (wordsInC === 1) {
+        if (wordsInD / wordsInC > 4) {
+          valueE += "\nVerify for Word Count - " + wordsInD + " / " + wordsInC;
+        }
+      } else {
+        if (wordsInD / wordsInC > 2) {
+          valueE += "\nVerify for Word Count - " + wordsInD + " / " + wordsInC;
+        }
+      }
+           
+  }
+
+    // Update the value in column E
+    sheet.getRange(row, columnEIndex).setValue(valueE);
+  }
+}
+
+
+
+function runTranslation(startRow) {
+  Logger.log("Running translations .... \n //////////////////////////////////////////////////");
+  var sheetName = "Sheet1"; // Specify the name of the sheet
+  var columnCIndex = 3; // Column C index (1-based)
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnGIndex = 7; // Column G index (1-based)
+  var columnMIndex = 13; // Column M index (1-based)
+  var columnNIndex = 14; // Column N index (1-based)
+
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  var lastRow = sheet.getLastRow();
+
+  while(true) {
+    try {
+           for (var row = startRow; row <= lastRow; row++) {
+            var valueC = String(sheet.getRange(row, columnCIndex).getValue());
+            var valueD = String(sheet.getRange(row, columnDIndex).getValue());
+            // Logger.log("processing row - " + row);
+            if (valueD === "") {
+              var valueG1 = String(sheet.getRange("G1").getValue());
+              
+              var concatenatedValue = getFullText(valueC, valueG1);
+              var returnValue = translateText3_5(concatenatedValue).trim();
+              
+              sheet.getRange(row, columnDIndex).setValue(returnValue);
+              sheet.getRange(row, columnNIndex).setValue("Translated");
+              // sheet.getRange(row, columnMIndex).setValue("Translated");
+
+            }
+          }
+          break;
+    } catch (e) {
+      console.error(e);
+      row--;
+    }
+  }
+}
+
+
+
+function getFullText(sourceText, langToTranslateTo) {
+  
+  if (langToTranslateTo ===  "Japanese") {
+       return "give me only the translation in " + langToTranslateTo + " for '" + sourceText + "' with only katakana script, without romanized form"; 
+  } else if (langToTranslateTo ===  "Korean" || langToTranslateTo ===  "Simplified Chinese") {
+        return "give me only the translation in " + langToTranslateTo + " for '" + sourceText + "'  without romanized form"; 
+  } else if (langToTranslateTo ===  "Hindi") {
+        return "give me only the translation in " + langToTranslateTo + " for '" + sourceText + "' without roman script"; 
+  }
+    return "give me only the translation in " + langToTranslateTo + " for '" + sourceText + "'"; 
+  
+
+
+  /* 
+=concatenate("give me only the translation in spanish for '", C5150, "'")
+=concatenate("give me only the translation in german for '", C5150, "'")
+=concatenate("give me only the translation in canadian french for '", C5150,  "'")
+=concatenate("give me only the translation in french for '", C4942,  "'")
+=concatenate("give me only the translation in portuguese for '", C4943,  "'")
+=concatenate("give me only the translation in brazilian portuguese for '", C4942,  "'")
+=concatenate("give me only the translation in italian for '", C9,  "'")
+=concatenate("give me only the translation in dutch for '", C3079,  "'")
+=concatenate("give me only the translation in swedish for '", C3,  "'")
+=concatenate("give me only the translation in Danish for '", C1351,  "'")
+=concatenate("give me only the translation in Finnish for '", C8,  "'")
+=concatenate("give me only the translation in Norwegian for '", C5177,  "'")
+=concatenate("give me only the translation in croatian for '", C5151,  "'")
+=concatenate("give me only the translation in hungarian for '", C701, "'")
+
+=concatenate("give me only the translation in russian for '", C8,  "'")
+=concatenate("give me only the translation in turkish for '", C12,  "'")
+=concatenate("give me only the translation in Bhasa Indonasia for '", C17,  "'")
+
+
+=concatenate("give me only the translation in japanese for '", C9,  "' with only katakana script, without romanized form")
+=concatenate("give me only the translation in korean for '", C152,  "' without romanized form")
+=concatenate("give me only the translation in Simplified chinese for '", C12,  "' without romanized form")
+=concatenate("give me only the translation in hindi for '", C9,  "' without roman script")
+
+
+*/
+
+}
+
+function checkBracketCount(valueC, valueD) {
+  var openBracketsCountC = (valueC.match(/\(/g) || []).length;
+  var closedBracketsCountC = (valueC.match(/\)/g) || []).length;
+  var openBracketsCountD = (valueD.match(/\(/g) || []).length;
+  var closedBracketsCountD = (valueD.match(/\)/g) || []).length;
+
+  if (openBracketsCountC !== openBracketsCountD || closedBracketsCountC !== closedBracketsCountD) {
+    return "Verify for bracket-count";
+  } else {
+    return "";
+  }
+}
+
+
+
+// function to rerun translations for content updates.
+function clearColumnsDF(rowCount) {
+  Logger.log("clearing translation content and Verified flag");
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+  var data = sheet.getDataRange().getValues();
+
+  var columnCIndex = 3; // Column C index (1-based)
+  var columnDIndex = 4; // Column D index (1-based)
+  var columnGIndex = 7; // Column G index (1-based)
+  var columnMIndex = 13; // Column M index (1-based)
+  var columnNIndex = 14; // Column N index (1-based)
+
+
+  while (true) {
+
+    try {    
+        for (var i = 2; i < rowCount; i++) {
+          var valueD = data[i][3]; // value in translation
+          var valueM = data[i][12]; // Column M is index 12 (column D is index 3, column F is index 5)
+          var valueN = data[i][13]; // lang specific tracker for translations
+
+          if (valueM === "" && valueN === "") {
+            // sheet.getRange(i+1, 4).setValue(""); // Clear value in column D
+
+                  var valueC = String(sheet.getRange(i+1, columnCIndex).getValue());
+                  valueD = String(sheet.getRange(i+1, columnDIndex).getValue());
+                  Logger.log("processing row - " + i);
+                    var valueG1 = String(sheet.getRange("G1").getValue());
+                    
+                    var concatenatedValue = getFullText(valueC, valueG1);
+                    var returnValue = translateText3_5(concatenatedValue).trim();
+                    
+                    sheet.getRange(i+1, columnDIndex).setValue(returnValue);
+                    sheet.getRange(i+1, columnNIndex).setValue("Translated");
+
+
+
+            sheet.getRange(i+1, 6).setValue(""); // Clear value in column F, so the checks will run
+            // sheet.getRange(i, 14).setValue(""); // Clear value in column N
+
+              scanForColon_Slash_doubleQuotes(i+1, i+1);  
+            verifyCurlyBraces(i+1, i+1);
+              verifyAngleBrackets(i+1, i+1);
+              removeDotFromEnd(i+1, i+1);
+              setVerifiedFlag(i+1, i+1);
+
+          }
+        }
+    break;
+    } catch(e) {
+      console.error(e);
+      i--;
+    }
+  }
+}
+
+
+
+
+
+function copyColumnMtoN(lastRow) {
+
+  Logger.log("copying column M to N ...");
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+  // var lastRow = sheet.getLastRow();
+  var rangeM = sheet.getRange("M1:M" + lastRow);
+  var rangeN = sheet.getRange("N1:N" + lastRow);
+  var valuesM = rangeM.getValues();
+
+  rangeN.setValues(valuesM);
+}
+
+
+
+
+
