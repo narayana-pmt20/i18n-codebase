@@ -1,0 +1,26 @@
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+Process for running the translations
+
+	Take the json, put that in A1 of "Incremental Translations" sheet 
+	Give the proper prefix in the product area
+
+	Copy that output into Master English - WORKSHEET - newKeys sheet
+	Run the script - this will remove duplicates, remove "Translated" from the "master" sheet
+	Now take the entries remaining in newKeys sheet, and append them into "master" sheet with columns A, B and C 
+	Copy ALL (from the row 3 till the end) the contents of the "master" sheet in the worksheet into Master Sheet for English
+	Copy the Column F from master WORK sheet into English Sheet
+	
+	Now go to individual lang sheets, copy column M to Column N and run the script
+	
+	After running it for all the langs, come back and change Column G (Update to existing content tracker) into "Translated"
+	
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
